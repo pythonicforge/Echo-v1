@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
 
 app = Flask(__name__)
+CORS(app)
 
 # Load the model and data
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
