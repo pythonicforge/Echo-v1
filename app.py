@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 CORS(app)
@@ -223,5 +224,26 @@ def query():
     response = facts[closest_idx]
     return jsonify({"response": response})
 
+@app.route("/keep-alive", methods=["GET"])
+def keep_alive():
+    return jsonify({"status": "alive"})
+
+def keep_server_alive():
+    with app.app_context():
+        # Making a self-request to keep the server active
+        response = app.test_client().get('/keep-alive')
+        print(f"Keep-alive check: {response.json}")
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    # Initialize APScheduler
+    scheduler = BackgroundScheduler()
+    # Schedule the keep-alive check every 5 minutes
+    scheduler.add_job(keep_server_alive, 'interval', minutes=5)
+    scheduler.start()
+
+    try:
+        app.run(host="0.0.0.0", port=5000)
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    finally:
+        scheduler.shutdown()
